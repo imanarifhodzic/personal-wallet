@@ -1,8 +1,8 @@
 import db from "../database/db.js";
 
-export const getChildren = (req, res) => {
+export const getChildren = async (req, res) => {
   try {
-    const children = db
+    const children = await db
       .prepare(
         "SELECT id, full_name, email, age FROM users WHERE parent_id = ? AND role = ?",
       )
@@ -13,11 +13,11 @@ export const getChildren = (req, res) => {
   }
 };
 
-export const getChildSummary = (req, res) => {
+export const getChildSummary = async (req, res) => {
   const { childId } = req.params;
 
   try {
-    const child = db
+    const child = await db
       .prepare(
         "SELECT id, full_name, email FROM users WHERE id = ? AND parent_id = ?",
       )
@@ -25,7 +25,7 @@ export const getChildSummary = (req, res) => {
 
     if (!child) return res.status(403).json({ error: "Not authorized" });
 
-    const income = db
+    const income = await db
       .prepare(
         `
       SELECT COALESCE(SUM(amount), 0) as total FROM transactions
@@ -35,7 +35,7 @@ export const getChildSummary = (req, res) => {
       )
       .get(childId);
 
-    const expenses = db
+    const expenses = await db
       .prepare(
         `
       SELECT COALESCE(SUM(amount), 0) as total FROM transactions
@@ -45,7 +45,7 @@ export const getChildSummary = (req, res) => {
       )
       .get(childId);
 
-    const transactions = db
+    const transactions = await db
       .prepare(
         `
       SELECT t.*, c.name as category_name FROM transactions t

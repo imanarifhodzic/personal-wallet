@@ -1,9 +1,9 @@
 import db from "../database/db.js";
 import bcrypt from "bcrypt";
 
-export const getProfile = (req, res) => {
+export const getProfile = async (req, res) => {
   try {
-    const user = db
+    const user = await db
       .prepare(
         "SELECT id, full_name, email, created_at FROM users WHERE id = ?",
       )
@@ -16,7 +16,7 @@ export const getProfile = (req, res) => {
   }
 };
 
-export const updateFullName = (req, res) => {
+export const updateFullName = async (req, res) => {
   const { full_name } = req.body;
 
   if (!full_name || full_name.trim() === "") {
@@ -24,12 +24,12 @@ export const updateFullName = (req, res) => {
   }
 
   try {
-    db.prepare("UPDATE users SET full_name = ? WHERE id = ?").run(
+    await db.prepare("UPDATE users SET full_name = ? WHERE id = ?").run(
       full_name.trim(),
       req.userId,
     );
 
-    const updated = db
+    const updated = await db
       .prepare(
         "SELECT id, full_name, email, created_at FROM users WHERE id = ?",
       )
@@ -57,7 +57,7 @@ export const updatePassword = async (req, res) => {
   }
 
   try {
-    const user = db.prepare("SELECT * FROM users WHERE id = ?").get(req.userId);
+    const user = await db.prepare("SELECT * FROM users WHERE id = ?").get(req.userId);
     const match = await bcrypt.compare(current_password, user.password_hash);
 
     if (!match) {
@@ -65,7 +65,7 @@ export const updatePassword = async (req, res) => {
     }
 
     const password_hash = await bcrypt.hash(new_password, 10);
-    db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(
+    await db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(
       password_hash,
       req.userId,
     );

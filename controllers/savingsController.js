@@ -1,8 +1,8 @@
 import db from "../database/db.js";
 
-export const getSavingsGoals = (req, res) => {
+export const getSavingsGoals = async (req, res) => {
   try {
-    const goals = db
+    const goals = await db
       .prepare(
         "SELECT * FROM savings_goals WHERE user_id = ? ORDER BY created_at DESC",
       )
@@ -13,7 +13,7 @@ export const getSavingsGoals = (req, res) => {
   }
 };
 
-export const createSavingsGoal = (req, res) => {
+export const createSavingsGoal = async (req, res) => {
   const { name, target_amount, monthly_contribution, color } = req.body;
 
   if (!name || !target_amount || !monthly_contribution) {
@@ -23,7 +23,7 @@ export const createSavingsGoal = (req, res) => {
   }
 
   try {
-    const result = db
+    const result = await db
       .prepare(
         `
       INSERT INTO savings_goals (user_id, name, target_amount, monthly_contribution, color)
@@ -38,7 +38,7 @@ export const createSavingsGoal = (req, res) => {
         color || "#534AB7",
       );
 
-    const goal = db
+    const goal = await db
       .prepare("SELECT * FROM savings_goals WHERE id = ?")
       .get(result.lastInsertRowid);
     res.status(201).json(goal);
@@ -47,7 +47,7 @@ export const createSavingsGoal = (req, res) => {
   }
 };
 
-export const addContribution = (req, res) => {
+export const addContribution = async (req, res) => {
   const { id } = req.params;
   const { amount, date } = req.body;
 
@@ -56,7 +56,7 @@ export const addContribution = (req, res) => {
   }
 
   try {
-    const goal = db
+    const goal = await db
       .prepare("SELECT * FROM savings_goals WHERE id = ? AND user_id = ?")
       .get(id, req.userId);
 
@@ -67,32 +67,32 @@ export const addContribution = (req, res) => {
       goal.target_amount,
     );
 
-    db.prepare(
+    await db.prepare(
       "UPDATE savings_goals SET saved_amount = ? WHERE id = ? AND user_id = ?",
     ).run(newAmount, id, req.userId);
 
     const contributionDate = date || new Date().toISOString().split("T")[0];
 
     // Find or create a Savings category for this user
-    let savingsCategory = db
+    let savingsCategory = await db
       .prepare(
         "SELECT * FROM categories WHERE user_id = ? AND name = 'Savings'",
       )
       .get(req.userId);
 
     if (!savingsCategory) {
-      const result = db
+      const result = await db
         .prepare(
           "INSERT INTO categories (user_id, name, type, color) VALUES (?, 'Savings', 'expense', '#534AB7')",
         )
         .run(req.userId);
-      savingsCategory = db
+      savingsCategory = await db
         .prepare("SELECT * FROM categories WHERE id = ?")
         .get(result.lastInsertRowid);
     }
 
     // Create expense transaction for the contribution
-    db.prepare(
+    await db.prepare(
       `
       INSERT INTO transactions (user_id, category_id, amount, type, description, transaction_date)
       VALUES (?, ?, ?, 'expense', ?, ?)
@@ -105,7 +105,7 @@ export const addContribution = (req, res) => {
       contributionDate,
     );
 
-    const updated = db
+    const updated = await db
       .prepare("SELECT * FROM savings_goals WHERE id = ?")
       .get(id);
     res.json(updated);
@@ -115,18 +115,18 @@ export const addContribution = (req, res) => {
   }
 };
 
-export const updateSavingsGoal = (req, res) => {
+export const updateSavingsGoal = async (req, res) => {
   const { id } = req.params;
   const { name, target_amount, monthly_contribution, color } = req.body;
 
   try {
-    const existing = db
+    const existing = await db
       .prepare("SELECT * FROM savings_goals WHERE id = ? AND user_id = ?")
       .get(id, req.userId);
 
     if (!existing) return res.status(404).json({ error: "Goal not found" });
 
-    db.prepare(
+    await db.prepare(
       `
       UPDATE savings_goals
       SET name = ?, target_amount = ?, monthly_contribution = ?, color = ?
@@ -141,7 +141,7 @@ export const updateSavingsGoal = (req, res) => {
       req.userId,
     );
 
-    const updated = db
+    const updated = await db
       .prepare("SELECT * FROM savings_goals WHERE id = ?")
       .get(id);
     res.json(updated);
@@ -150,17 +150,17 @@ export const updateSavingsGoal = (req, res) => {
   }
 };
 
-export const deleteSavingsGoal = (req, res) => {
+export const deleteSavingsGoal = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const existing = db
+    const existing = await db
       .prepare("SELECT * FROM savings_goals WHERE id = ? AND user_id = ?")
       .get(id, req.userId);
 
     if (!existing) return res.status(404).json({ error: "Goal not found" });
 
-    db.prepare("DELETE FROM savings_goals WHERE id = ? AND user_id = ?").run(
+    await db.prepare("DELETE FROM savings_goals WHERE id = ? AND user_id = ?").run(
       id,
       req.userId,
     );

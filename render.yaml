@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: personal-wallet
+    runtime: node
+    plan: free
+    # Render sets NODE_ENV=production, so only "dependencies" are installed
+    # (vite lives there; selenium/chromedriver stay in devDependencies and are skipped).
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: JWT_SECRET
+        sync: false
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false

@@ -11,6 +11,11 @@ node_modules
 dist
 dist-ssr
 *.local
+
+# SQLite / libSQL local database files
+*.db
+*.db-shm
+*.db-wal
 .env
 # Editor directories and files
 .vscode/*

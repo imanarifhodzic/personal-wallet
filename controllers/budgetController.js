@@ -1,8 +1,8 @@
 import db from "../database/db.js";
 
-export const getBudgets = (req, res) => {
+export const getBudgets = async (req, res) => {
   try {
-    const budgets = db
+    const budgets = await db
       .prepare(
         `
       SELECT b.*, c.name as category_name, c.color as category_color,
@@ -28,7 +28,7 @@ export const getBudgets = (req, res) => {
   }
 };
 
-export const createBudget = (req, res) => {
+export const createBudget = async (req, res) => {
   const { category_id, limit_amount, period, start_date } = req.body;
 
   if (!category_id || !limit_amount || !start_date) {
@@ -38,7 +38,7 @@ export const createBudget = (req, res) => {
   }
 
   try {
-    const existing = db
+    const existing = await db
       .prepare(
         "SELECT id FROM budgets WHERE user_id = ? AND category_id = ? AND start_date = ?",
       )
@@ -50,7 +50,7 @@ export const createBudget = (req, res) => {
         .json({ error: "Budget already exists for this category and period" });
     }
 
-    const result = db
+    const result = await db
       .prepare(
         "INSERT INTO budgets (user_id, category_id, limit_amount, period, start_date) VALUES (?, ?, ?, ?, ?)",
       )
@@ -62,7 +62,7 @@ export const createBudget = (req, res) => {
         start_date,
       );
 
-    const budget = db
+    const budget = await db
       .prepare("SELECT * FROM budgets WHERE id = ?")
       .get(result.lastInsertRowid);
     res.status(201).json(budget);
@@ -71,12 +71,12 @@ export const createBudget = (req, res) => {
   }
 };
 
-export const updateBudget = (req, res) => {
+export const updateBudget = async (req, res) => {
   const { id } = req.params;
   const { limit_amount, period, start_date } = req.body;
 
   try {
-    const existing = db
+    const existing = await db
       .prepare("SELECT * FROM budgets WHERE id = ? AND user_id = ?")
       .get(id, req.userId);
 
@@ -84,7 +84,7 @@ export const updateBudget = (req, res) => {
       return res.status(404).json({ error: "Budget not found" });
     }
 
-    db.prepare(
+    await db.prepare(
       "UPDATE budgets SET limit_amount = ?, period = ?, start_date = ? WHERE id = ? AND user_id = ?",
     ).run(
       limit_amount ?? existing.limit_amount,
@@ -94,18 +94,18 @@ export const updateBudget = (req, res) => {
       req.userId,
     );
 
-    const updated = db.prepare("SELECT * FROM budgets WHERE id = ?").get(id);
+    const updated = await db.prepare("SELECT * FROM budgets WHERE id = ?").get(id);
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: "Server error" });
   }
 };
 
-export const deleteBudget = (req, res) => {
+export const deleteBudget = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const existing = db
+    const existing = await db
       .prepare("SELECT * FROM budgets WHERE id = ? AND user_id = ?")
       .get(id, req.userId);
 
@@ -113,7 +113,7 @@ export const deleteBudget = (req, res) => {
       return res.status(404).json({ error: "Budget not found" });
     }
 
-    db.prepare("DELETE FROM budgets WHERE id = ? AND user_id = ?").run(
+    await db.prepare("DELETE FROM budgets WHERE id = ? AND user_id = ?").run(
       id,
       req.userId,
     );

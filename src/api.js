@@ -1,7 +1,10 @@
 import axios from "axios";
 
+// Relative path so the frontend talks to whatever host is serving it.
+// In production Express serves the built app and the API on one origin.
+// In local dev, Vite proxies /api to the Express server (see vite.config.js).
 const api = axios.create({
-  baseURL: "http://localhost:3000/api",
+  baseURL: "/api",
 });
 
 api.interceptors.request.use((config) => {

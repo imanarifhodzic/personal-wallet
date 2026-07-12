@@ -1,8 +1,8 @@
 import db from "../database/db.js";
 
-export const getCategories = (req, res) => {
+export const getCategories = async (req, res) => {
   try {
-    const categories = db
+    const categories = await db
       .prepare("SELECT * FROM categories WHERE user_id = ? ORDER BY name ASC")
       .all(req.userId);
     res.json(categories);
@@ -11,7 +11,7 @@ export const getCategories = (req, res) => {
   }
 };
 
-export const createCategory = (req, res) => {
+export const createCategory = async (req, res) => {
   const { name, type, color } = req.body;
 
   if (!name || !type) {
@@ -19,7 +19,7 @@ export const createCategory = (req, res) => {
   }
 
   try {
-    const existing = db
+    const existing = await db
       .prepare("SELECT id FROM categories WHERE user_id = ? AND name = ?")
       .get(req.userId, name);
 
@@ -27,13 +27,13 @@ export const createCategory = (req, res) => {
       return res.status(400).json({ error: "Category already exists" });
     }
 
-    const result = db
+    const result = await db
       .prepare(
         "INSERT INTO categories (user_id, name, type, color) VALUES (?, ?, ?, ?)",
       )
       .run(req.userId, name, type, color || "#534AB7");
 
-    const category = db
+    const category = await db
       .prepare("SELECT * FROM categories WHERE id = ?")
       .get(result.lastInsertRowid);
     res.status(201).json(category);
@@ -42,12 +42,12 @@ export const createCategory = (req, res) => {
   }
 };
 
-export const updateCategory = (req, res) => {
+export const updateCategory = async (req, res) => {
   const { id } = req.params;
   const { name, type, color } = req.body;
 
   try {
-    const existing = db
+    const existing = await db
       .prepare("SELECT * FROM categories WHERE id = ? AND user_id = ?")
       .get(id, req.userId);
 
@@ -55,7 +55,7 @@ export const updateCategory = (req, res) => {
       return res.status(404).json({ error: "Category not found" });
     }
 
-    db.prepare(
+    await db.prepare(
       "UPDATE categories SET name = ?, type = ?, color = ? WHERE id = ? AND user_id = ?",
     ).run(
       name ?? existing.name,
@@ -65,18 +65,18 @@ export const updateCategory = (req, res) => {
       req.userId,
     );
 
-    const updated = db.prepare("SELECT * FROM categories WHERE id = ?").get(id);
+    const updated = await db.prepare("SELECT * FROM categories WHERE id = ?").get(id);
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: "Server error" });
   }
 };
 
-export const deleteCategory = (req, res) => {
+export const deleteCategory = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const existing = db
+    const existing = await db
       .prepare("SELECT * FROM categories WHERE id = ? AND user_id = ?")
       .get(id, req.userId);
 
@@ -84,7 +84,7 @@ export const deleteCategory = (req, res) => {
       return res.status(404).json({ error: "Category not found" });
     }
 
-    db.prepare("DELETE FROM categories WHERE id = ? AND user_id = ?").run(
+    await db.prepare("DELETE FROM categories WHERE id = ? AND user_id = ?").run(
       id,
       req.userId,
     );

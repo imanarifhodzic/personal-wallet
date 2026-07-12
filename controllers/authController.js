@@ -17,7 +17,7 @@ export const register = async (req, res) => {
   }
 
   try {
-    const existingUser = db
+    const existingUser = await db
       .prepare("SELECT id FROM users WHERE email = ?")
       .get(email);
     if (existingUser) {
@@ -33,7 +33,7 @@ export const register = async (req, res) => {
           .json({ error: "Parent email is required for users under 16" });
       }
 
-      const parent = db
+      const parent = await db
         .prepare("SELECT id, email FROM users WHERE email = ?")
         .get(parent_email);
       if (!parent) {
@@ -48,13 +48,13 @@ export const register = async (req, res) => {
       const code = generateCode();
       const expires_at = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
-      db.prepare("DELETE FROM pending_links WHERE child_email = ?").run(email);
-      db.prepare(
+      await db.prepare("DELETE FROM pending_links WHERE child_email = ?").run(email);
+      await db.prepare(
         "INSERT INTO pending_links (child_email, parent_id, code, expires_at) VALUES (?, ?, ?, ?)",
       ).run(email, parent.id, code, expires_at);
 
       const password_hash = await bcrypt.hash(password, 10);
-      db.prepare(
+      await db.prepare(
         "INSERT INTO users (full_name, email, password_hash, role, age) VALUES (?, ?, ?, ?, ?)",
       ).run(full_name, email, password_hash, "pending", parseInt(age));
 
@@ -67,7 +67,7 @@ export const register = async (req, res) => {
     }
 
     const password_hash = await bcrypt.hash(password, 10);
-    const result = db
+    const result = await db
       .prepare(
         "INSERT INTO users (full_name, email, password_hash, role, age) VALUES (?, ?, ?, ?, ?)",
       )
@@ -97,7 +97,7 @@ export const verifyLinkCode = async (req, res) => {
   }
 
   try {
-    const pending = db
+    const pending = await db
       .prepare("SELECT * FROM pending_links WHERE child_email = ? AND code = ?")
       .get(child_email, code);
 
@@ -106,21 +106,21 @@ export const verifyLinkCode = async (req, res) => {
     }
 
     if (new Date(pending.expires_at) < new Date()) {
-      db.prepare("DELETE FROM pending_links WHERE id = ?").run(pending.id);
+      await db.prepare("DELETE FROM pending_links WHERE id = ?").run(pending.id);
       return res
         .status(400)
         .json({ error: "Code has expired. Please register again." });
     }
 
-    db.prepare("UPDATE users SET role = ?, parent_id = ? WHERE email = ?").run(
+    await db.prepare("UPDATE users SET role = ?, parent_id = ? WHERE email = ?").run(
       "child",
       pending.parent_id,
       child_email,
     );
 
-    db.prepare("DELETE FROM pending_links WHERE id = ?").run(pending.id);
+    await db.prepare("DELETE FROM pending_links WHERE id = ?").run(pending.id);
 
-    const user = db
+    const user = await db
       .prepare("SELECT * FROM users WHERE email = ?")
       .get(child_email);
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
@@ -150,7 +150,7 @@ export const login = async (req, res) => {
   }
 
   try {
-    const user = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
+    const user = await db.prepare("SELECT * FROM users WHERE email = ?").get(email);
     if (!user) return res.status(401).json({ error: "Invalid credentials" });
 
     if (user.role === "pending") {
