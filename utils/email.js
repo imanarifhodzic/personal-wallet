@@ -11,7 +11,32 @@ const transporter = nodemailer.createTransport({
 });
 
 export const sendLinkCode = async (parentEmail, childEmail, code) => {
-  // ... existing code stays here unchanged
+  console.log(
+    "Sending link code to:",
+    parentEmail,
+    "for child:",
+    childEmail,
+    "code:",
+    code,
+  );
+  await transporter.sendMail({
+    from: `"Personal Wallet" <${process.env.EMAIL_USER}>`,
+    to: parentEmail,
+    subject: "Personal Wallet — Account linking request",
+    html: `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+        <h2 style="color: #534AB7;">Personal Wallet</h2>
+        <p>A child account is being created and wants to link to your Personal Wallet account.</p>
+        <p><strong>Child email:</strong> ${childEmail}</p>
+        <p>Their one-time verification code is:</p>
+        <div style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #534AB7; padding: 20px; background: #EEEDFE; border-radius: 8px; text-align: center; margin: 20px 0;">
+          ${code}
+        </div>
+        <p style="color: #888;">This code expires in 15 minutes. If you did not expect this request, ignore this email.</p>
+      </div>
+    `,
+  });
+  console.log("Link code email sent successfully");
 };
 
 export const sendVerificationEmail = async (toEmail, token) => {
