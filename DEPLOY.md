@@ -26,7 +26,11 @@ on one origin (no CORS, no hardcoded API host).
 ## Environment variables (set in the Render dashboard)
 
 See `.env.example`. Required: `JWT_SECRET`, `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`,
-`EMAIL_USER`, `EMAIL_PASS`. `PORT` is provided by Render automatically.
+`RESEND_API_KEY`. Optional: `EMAIL_FROM`. `PORT` is provided by Render automatically.
+
+Email is sent via [Resend](https://resend.com)'s HTTP API rather than SMTP, because
+Render's free tier blocks outbound SMTP ports (25/465/587) — an SMTP send from Render
+hangs until it times out, which surfaces as a "Server error" during registration.
 
 ## Deploy steps
 
